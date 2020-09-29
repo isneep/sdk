@@ -128,7 +128,7 @@ class LoaderFactory implements FactoryInterface
      *
      * @return void
      */
-    private function validatePluginManagerOptions(Config $options, $name): void
+    private function validatePluginManagerOptions(Config $options, string $name): void
     {
         $mandatoryManagerConfigKeys = [
             'service_manager',
