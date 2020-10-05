@@ -1,0 +1,195 @@
+@startuml
+!include formatting.include.puml
+
+scale 0.8
+'autoactivate on
+
+autonumber "<b>00</b>"
+
+center header
+    PAY. SDK Application flow
+end header
+
+actor User
+User -> Config : create
+
+activate Config
+User <- Config: return Config
+|||
+User -> Application: initialize with Config
+deactivate Config
+
+activate Application
+Application -> Application: init
+group init
+
+    Application -> ServiceManagerConfig: instantiate ServiceManagerConfig
+    activate ServiceManagerConfig
+    ServiceManagerConfig -> ServiceManagerConfig: inject config paths ConfigLoaderFactory and ServiceManagerFactory
+    Application <- ServiceManagerConfig: return ServiceManagerConfig
+
+    Application -> ServiceManager: instantiate ServiceManager
+    activate ServiceManager
+    Application <- ServiceManager: return ServiceManager
+    deactivate ServiceManager
+    Application -> ServiceManagerConfig: configure ServiceManager
+    ServiceManagerConfig -> ServiceManagerConfig: add ServiceManager as a service
+    ServiceManagerConfig -> ServiceManager: configure
+    activate ServiceManager
+    deactivate ServiceManagerConfig
+
+    ServiceManager -> ServiceManager: set application config as a service
+    activate ServiceManager $BGColor2
+
+    Application -> ServiceManager: get ServiceLoader
+    group get ServiceLoader
+        |||
+        ref over ServiceManager, ServiceLoaderFactory
+            get ServiceLoader from ServiceManager
+            <size:10>(service manager flow)</size>
+        end ref
+        |||
+        activate ServiceLoaderFactory
+        opt extra specific for ServiceLoader
+            ref over ServiceLoaderFactory, ConfigLoader
+                get ConfigLoader from ServiceManager
+                <size:10>(service manager flow)</size>
+            end ref
+
+            ServiceLoaderFactory -> ServiceLoader: set default service manager with config
+            activate ServiceLoader
+            ServiceLoaderFactory -> ServiceLoader: add ServiceManager
+
+            alt has service loader options
+                ServiceLoaderFactory -> ServiceLoader: inject ServiceLoader options
+                loop foreach moduleServiceManagerOptions
+                    ServiceLoader -> ServiceLoader: validate module service manager options
+                    ServiceLoader -> ServiceLoader: add service managers (configuration)
+                end
+                |||
+            end
+            group ServiceLoader preLoad
+                |||
+                ref over ServiceLoader, ConfigLoader
+                    get ConfigLoader from ServiceManager
+                    <size:10>(service manager flow)</size>
+                end ref
+                ServiceLoader -> ConfigLoader: getConfigs
+                activate ConfigLoader
+                ServiceLoader <- ConfigLoader: return ConfigProviders
+                note right: ConfigProviders are initialized\nfrom ConfigLoader
+                deactivate ConfigLoader
+
+                loop foreach configs
+                    create ConfigProvider
+                    ServiceLoader -> ConfigProvider: load PluginServiceManager config
+                    activate ConfigProvider
+                    ServiceLoader <- ConfigProvider: return PluginServiceManager config
+                    deactivate ConfigProvider
+                    ServiceLoader -> ServiceLoader: set PluginServiceManager config as array
+                end
+            end
+            |||
+            deactivate ServiceLoader
+        end
+        ServiceLoaderFactory -> ServiceManager: return ServiceLoader
+        |||
+        deactivate ServiceLoaderFactory
+    end
+    deactivate ServiceManager
+
+    Application -> ServiceLoader: load
+    activate ServiceManager $BGColor3
+    activate ServiceLoader
+    group ServiceLoader load
+        ref over ServiceLoader, ConfigLoader
+            get ConfigLoader from ServiceManager
+            <size:10>(service manager flow)</size>
+        end ref
+        |||
+        loop foreach PluginServiceManager (array)
+            ServiceLoader -> ServiceLoader: merge ServiceConfig
+            group merge ServiceConfig
+                ServiceLoader -> ServiceLoader: Check the total config for entries with 'config_key' and\nadd them to the PluginServiceManager configuration
+                create ServiceConfig
+                ServiceLoader -> ServiceConfig: construct
+                activate ServiceConfig
+                ServiceLoader <- ServiceConfig: return ServiceConfig
+                loop foreach configuration
+                    alt configuration is an array
+                        ServiceLoader -> ServiceConfig: construct with configuration
+                        activate ServiceConfig $BGColor2
+                        ServiceLoader <- ServiceConfig: return ServiceConfig
+                    end
+                    alt ServiceConfig has configuration_classes
+                        loop foreach configuration class
+                            ServiceConfig -> ServiceConfig: create new instance with config
+                            activate ServiceConfig $BGColor3
+                            ServiceConfig -> ServiceConfig: merge with new instance
+                            deactivate ServiceConfig
+                            |||
+                        end
+                    end
+                    ServiceConfig -> ServiceConfig: merge
+                    deactivate ServiceConfig
+                end
+                ServiceLoader <- ServiceConfig: return ServiceConfig
+                deactivate ServiceConfig
+                deactivate ServiceConfig
+            end
+            |||
+
+            alt PluginServiceManager not a ServiceManager
+                alt PluginServiceManager not present in ServiceManager -> skip
+                else
+                    |||
+                    ref over ServiceManager, ServiceLoader
+                        get PluginServiceManager
+                        <size:10>(service manager flow)</size>
+                    end ref
+                    ServiceManager -> ServiceLoader: return PluginServiceManager
+                    |||
+                else PluginServiceManager is not a ServiceManager -> ServiceNotFoundException
+                end
+            end
+
+            ServiceLoader -> ServiceConfig: construct with configuration
+            activate ServiceConfig
+            ServiceLoader <- ServiceConfig: return ServiceConfig
+            ServiceLoader -> ServiceConfig: configure PluginServiceManager
+            ServiceConfig -> ServiceManager: configure<color:red>~*</color>
+            deactivate ServiceConfig
+            note left
+                <size:12><b><color:red>~*</color></b></size> Call to ServiceManager because PluginServiceManager
+                is an extends of ServiceManager
+            end note
+            deactivate ServiceLoader
+        end
+    end
+    deactivate ServiceManager
+
+    Application -> ServiceManager: get Application instance
+    ref over Application, ServiceManager
+        get Application
+        <size:10>(service manager flow)</size>
+    end ref
+    ServiceManager -> Application: return Application instance
+    activate Application $BGColor2
+
+    group Application bootstrap
+        Application -> ServiceManager: get ApiService
+        ref over Application, ServiceManager
+            get ApiService
+            <size:10>(service manager flow)</size>
+        end ref
+        ServiceManager -> Application: return ApiService
+        Application -> Application: set ApiService
+
+        Application -> Application: return bootstrapped Application
+    end
+end
+Application -> User: return configured and loaded\nApplication instance
+deactivate Application
+
+!include footer.include.puml
+@enduml

@@ -1,0 +1,98 @@
+skinparam nodesep 5
+skinparam ranksep 5
+
+!$defaultBGColor = "#AliceBlue"
+!$defaultFontColor = "#DodgerBlue"
+!$defaultBorderColor = "#MediumBlue"
+
+!$BGColor2 = "#LightSkyBlue"
+!$BGColor3 = "#SteelBlue"
+!$BGColor4 = "#Red"
+
+skinparam default {
+    FontName Impact
+    FontSize 12
+
+}
+
+skinparam component {
+    Style uml2
+    ArrowColor $defaultBorderColor
+    ArrowThickness 2
+    BorderColor $defaultBorderColor
+    BackgroundColor $defaultBGColor
+}
+
+skinparam interface {
+    BorderColor $defaultBorderColor
+}
+
+skinparam package {
+    BackgroundColor $BGColor2
+    StereotypeFontSize 0
+    StereotypeFontColor white
+}
+
+skinparam package<<module>> {
+    BackgroundColor $BGColor2
+    BorderColor $defaultBorderColor
+    FontColor $defaultBorderColor
+    shadowing true
+}
+
+skinparam frame {
+    BackgroundColor white
+    BorderThickness 1
+    shadowing false
+}
+
+skinparam node {
+    BackgroundColor $BGColor3
+}
+
+skinparam sequence {
+    GroupBackgroundColor $defaultBorderColor
+    GroupBodyBackgroundColor white
+    GroupBorderColor $defaultBorderColor
+    GroupBorderThickness 2
+    GroupFontColor black
+    GroupHeaderFontColor white
+
+    LifeLineBackgroundColor $defaultBGColor
+    LifeLineBorderColor $defaultBorderColor
+    LifeLineBorderThickness 1
+
+    ReferenceAlignment center
+    ReferenceBackgroundColor $defaultBGColor
+    ReferenceBorderThickness 1
+    ReferenceBorderColor $defaultBorderColor
+    ReferenceFontName Ubuntu Mono
+    ReferenceFontStyle italic
+    ReferenceFontSize 14
+    ReferenceHeaderBackgroundColor $defaultBorderColor
+}
+
+skinparam actor {
+    BorderColor $defaultBorderColor
+    BackgroundColor $defaultBorderColor
+    shadowing false
+}
+
+skinparam participant {
+    BorderColor $defaultBorderColor
+    BackgroundColor $defaultBGColor
+    FontStyle bold
+    shadowing false
+}
+
+skinparam note {
+    BackgroundColor $defaultBGColor
+    BorderColor $defaultBorderColor
+    BorderThickness 2
+    FontColor black
+    FontName Ubuntu Mono
+    FontSize 12
+    FontStyle normal
+    shadowing false
+    TextAlignment left
+}

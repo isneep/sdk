@@ -1,0 +1,405 @@
+@startuml(id=headerProcedure)
+!procedure $serviceManagerHeader($name)
+    center header
+        PAY. SDK ServiceManager - $name
+    end header
+!endprocedure
+@enduml
+
+@startuml(id=construct) service_manager_flow--construct
+
+!include formatting.include.puml
+!include service_manager_flow.puml!headerProcedure
+
+!procedure $overrideSet($type, $set)
+activate ServiceManager $BGColor3
+group override set for $type in $set
+    loop foreach $set entry
+        alt $type exists as a configured service
+            ServiceManager -> ServiceManager: add to detection buffer
+        end
+        alt detection buffer is empty
+            ServiceManager -> ServiceManager: return
+            deactivate ServiceManager
+        else ContainerModificationNotAllowedException
+        end
+    end
+end
+!endprocedure
+
+!procedure $resolveAliases($color = $BGColor3)
+activate ServiceManager $color
+group resolve aliases
+    loop foreach given aliases
+        ServiceManager -> ServiceManager: create visited buffer
+        ServiceManager -> ServiceManager: set $name to current $alias
+        loop while there are configured aliases
+            alt not already "visited"
+                ServiceManager -> ServiceManager: add to visited buffer
+                ServiceManager -> ServiceManager: get $name from configured aliases
+            else CyclicAliasException
+            end
+        end
+        ServiceManager -> ServiceManager: resolve $alias to $name and add to resolved aliases collection
+    end
+end
+deactivate ServiceManager
+!endprocedure
+
+$serviceManagerHeader("Construct")
+
+actor User
+-> ServiceManager: construct $file
+activate ServiceManager
+ServiceManager -> ServiceManager: configure with $config array
+group configure
+    ServiceManager -> ServiceManager: validate overrides
+    activate ServiceManager $BGColor2
+    group validate overrides
+        alt override is permitted\n\t<u><i>or</i></u>\nServiceManager not yet marked as configured
+            note over ServiceManager: do nothing
+        else when services are $config
+            ServiceManager -> ServiceManager: validate override set for services
+            $overrideSet("service", "services config names")
+        else when aliases are $config
+            ServiceManager -> ServiceManager: validate override set for aliases
+            $overrideSet("alias", "aliases config names")
+        else when invokables $config
+            ServiceManager -> ServiceManager: validate override set for invokables
+            $overrideSet("invokable class", "invokables config names")
+        else when factories $config
+            ServiceManager -> ServiceManager: validate override set for factories
+            $overrideSet("factory", "factories config names")
+        end
+    end
+    deactivate ServiceManager
+    |||
+    alt $config contains services
+        ServiceManager -> ServiceManager: merge services configuration
+    end
+    |||
+    alt $config contains invokables
+        ServiceManager -> ServiceManager: create aliases for invokables
+        activate ServiceManager $BGColor2
+        group create aliases for invokables
+            ServiceManager -> ServiceManager: set $aliases buffer
+            loop foreach invokables
+                ServiceManager -> ServiceManager: add alias to buffer when name and className are not equal
+            end
+            ServiceManager -> ServiceManager: return $aliases
+        end
+        deactivate ServiceManager
+
+        ServiceManager -> ServiceManager: create factories for invokables
+        activate ServiceManager $BGColor2
+        group create factories for invokables
+            ServiceManager -> ServiceManager: set $factories buffer
+            loop foreach invokables
+                alt $name equals class name
+                    ServiceManager -> ServiceManager: set ""InvokableFactory"" for $name\nand go to next entry
+                end
+                ServiceManager -> ServiceManager: set ""InvokableFactory"" for class name
+            end
+            ServiceManager -> ServiceManager: return $factories
+        end
+        deactivate ServiceManager
+
+        alt $aliases not empty
+            ServiceManager -> ServiceManager: merge aliases configuration
+        end
+
+        ServiceManager -> ServiceManager: merge factories configuration
+    end
+    |||
+    alt $config contains factories
+        ServiceManager -> ServiceManager: merge factories configuration
+    end
+    |||
+    alt $config contains aliases
+        ServiceManager -> ServiceManager: configure aliases
+        activate ServiceManager $BGColor2
+        group configure aliases
+            alt not configured yet
+                ServiceManager -> ServiceManager: merge aliases configuration
+                ServiceManager -> ServiceManager: resolve aliases
+                $resolveAliases()
+                ServiceManager -> ServiceManager: return
+            end
+            ServiceManager -> ServiceManager: intersect aliases with configuration
+            ServiceManager -> ServiceManager: merge aliases configuration
+            alt intersecting is needed
+                ServiceManager -> ServiceManager: resolve aliases
+                $resolveAliases()
+                ServiceManager -> ServiceManager: return
+            end
+
+            ServiceManager -> ServiceManager: resolve aliases
+            $resolveAliases()
+
+            ServiceManager -> ServiceManager: resolve aliases with previously resolved
+            activate ServiceManager $BGColor3
+            group resolve aliases with previously resolved
+                loop foreach resolved aliases
+                    alt value of resolved alias exists in given aliases
+                        ServiceManager -> ServiceManager: add given alias name to resolved aliases collection with same value
+                    end
+                end
+            end
+            deactivate ServiceManager
+        end
+        deactivate ServiceManager
+    else not yet configured\n\t<u><i>and</i></u>\nno aliases yet
+        ServiceManager -> ServiceManager: resolve aliases
+        $resolveAliases($BGColor2)
+    end
+    |||
+    alt $config contains initializers
+        ServiceManager -> ServiceManager: resolve initializers
+        activate ServiceManager $BGColor2
+        group resolve initializers
+            loop foreach given initializer
+                alt initializer is a string <u><i>and</i></u> class exists
+                    create Initializer
+                    ServiceManager -> Initializer: construct
+                    activate Initializer
+                    ServiceManager <- Initializer: return Initializer
+                    deactivate Initializer
+                end
+                alt Initializer is callable
+                    ServiceManager -> ServiceManager: add to initializers collection
+                else InvalidArgumentException
+                end
+            end
+        end
+        deactivate ServiceManager
+    end
+    |||
+    ServiceManager -> ServiceManager: set as configured
+end
+<- ServiceManager: return ServiceManager
+deactivate ServiceManager
+
+!include footer.include.puml
+@enduml
+
+
+@startuml(id=hasService) service_manager_flow--has_service
+!include formatting.include.puml
+!include service_manager_flow.puml!headerProcedure
+
+$serviceManagerHeader("Has Service")
+
+actor User
+User -> ServiceManager: check for service with with $name or $alias
+activate User
+activate ServiceManager
+group hasService
+    alt given $name is a string
+        alt $name is an alias
+            ServiceManager -> ServiceManager: override $name with value of alias
+        end
+        ServiceManager -> User: return service with $name exists\n\t<b><i>or</i></b>\nfactory with $name exists
+        deactivate ServiceManager
+    else InvalidArgumentException
+    end
+end
+deactivate User
+
+!include footer.include.puml
+@enduml
+
+
+@startuml(id=getService) service_manager_flow--get_service
+!include formatting.include.puml
+!include service_manager_flow.puml!headerProcedure
+
+$serviceManagerHeader("Get Service")
+
+actor User
+User -> ServiceManager: get service with $name or $alias
+activate User
+activate ServiceManager
+alt service with $name exists
+    ServiceManager -> User: return service
+else resolved alias != $name and service with alias exists
+    ServiceManager -> ServiceManager: check for alias in resolved aliases collection
+    ServiceManager -> ServiceManager: add service to service collection with resolved alias<color:red><size:14>~*</size></color>
+    note right
+        <color:red><size:14>~*</size></color>Aliases are resolved during ""configure()""<color:red><sup>1</sup></color>
+    end note
+    ServiceManager -> User: return service
+else otherwise
+    ServiceManager -> ServiceManager: create service
+    activate ServiceManager $BGColor2
+    group create service
+        alt try
+            group get Factory
+                ServiceManager -> ServiceManager: get factory 'service'
+                activate ServiceManager $BGColor3
+                create Factory
+                alt factory is a string and an existing class
+                    ServiceManager -> Factory: construct
+                    activate Factory
+                    ServiceManager <- Factory: return Factory
+                    deactivate Factory
+                    ServiceManager -> ServiceManager: mark factory creation as lazy loaded
+                end
+                |||
+                alt factory is callable
+                    alt factory is lazy loaded
+                        ServiceManager -> ServiceManager: override factory in services with callable
+                    end
+                    ServiceManager -> ServiceManager: return Factory
+                    deactivate ServiceManager
+                    |||
+                else ServiceNotFoundException
+                end
+            end
+            |||
+            ServiceManager -> Factory: invoke with ServiceManager, $name and options
+            activate Factory
+            create Instance
+            Factory -> Instance: construct and initiate
+            activate Instance
+            Instance -> Factory: return Instance
+            deactivate Instance
+            Factory -> ServiceManager: return Instance
+            deactivate Factory
+            |||
+            loop foreach resolved initializer<color:red><size:14>~**</size></color>
+                create Initializer
+                ServiceManager -> Initializer: call with ServiceManager and Instance
+                activate Initializer
+                Initializer -> Initializer: invoke and modify Instance (when necessary)
+                deactivate Initializer
+                |||
+            end
+            note right
+                <color:red><size:14>~**</size></color> Initializers are
+                resolved during
+                ""configure()""<color:red><sup>1</sup></color>
+            end note
+
+            ServiceManager -> ServiceManager: return Instance
+            deactivate ServiceManager
+            |||
+        else ServiceNotCreatedException
+        end
+    end
+    |||
+    alt alias != $name
+        ServiceManager -> ServiceManager: add service to services collection
+    end
+
+    ServiceManager -> User: return Instance
+    deactivate ServiceManager
+end
+deactivate User
+
+note over User, Initializer
+<size:14><color:red><sup>1</sup></color> For ""configure()"" see the service manager construct flow</size>
+end note
+
+!include footer.include.puml
+@enduml
+
+
+@startuml(id=buildService) service_manager_flow--build_service
+!include formatting.include.puml
+!include service_manager_flow.puml!headerProcedure
+
+$serviceManagerHeader("Build Service")
+
+actor User
+User -> ServiceManager: build service with $name and $options
+activate User
+activate ServiceManager
+ServiceManager -> ServiceManager: check given name is a alias
+ServiceManager -> ServiceManager: create service
+ref over ServiceManager: see create service @Get a service <&arrow-thick-top>
+ServiceManager -> User: return Instance
+deactivate ServiceManager
+deactivate User
+
+!include footer.include.puml
+@enduml
+
+
+@startuml(id=setService) service_manager_flow--set_service
+!include formatting.include.puml
+!include service_manager_flow.puml!headerProcedure
+
+$serviceManagerHeader("Set Service")
+
+actor User
+User -> ServiceManager: set service with $name and $service
+activate User
+activate ServiceManager
+ServiceManager -> ServiceManager: configure
+note right: build up config array with key ""services""
+ref over ServiceManager: see ""configure()"" @service manager construct flow
+deactivate ServiceManager
+deactivate User
+
+!include footer.include.puml
+@enduml
+
+
+@startuml(id=setFactory) service_manager_flow--set_factory
+!include formatting.include.puml
+!include service_manager_flow.puml!headerProcedure
+
+$serviceManagerHeader("Set Factory")
+
+actor User
+User -> ServiceManager: set factory with $name and $factory
+activate User
+activate ServiceManager
+ServiceManager -> ServiceManager: configure
+note right: build up config array with key ""factories""
+ref over ServiceManager: see ""configure()"" @service manager construct flow
+deactivate ServiceManager
+deactivate User
+
+!include footer.include.puml
+@enduml
+
+
+@startuml(id=setAlias) service_manager_flow--set_alias
+!include formatting.include.puml
+!include service_manager_flow.puml!headerProcedure
+
+$serviceManagerHeader("Set Alias")
+
+actor User
+User -> ServiceManager: set alias with $alias and $target
+activate User
+activate ServiceManager
+ServiceManager -> ServiceManager: configure
+note right: build up config array with key ""aliases""
+ref over ServiceManager: see ""configure()"" @service manager construct flow
+deactivate ServiceManager
+deactivate User
+
+!include footer.include.puml
+@enduml
+
+
+@startuml(id=addInitializer) service_manager_flow--add_initializer
+!include formatting.include.puml
+!include service_manager_flow.puml!headerProcedure
+
+$serviceManagerHeader("Add Initializer")
+
+actor User
+User -> ServiceManager: add $initializer
+activate User
+activate ServiceManager
+ServiceManager -> ServiceManager: configure
+note right: build up config array with key ""initializers""
+ref over ServiceManager: see ""configure()"" @service manager construct flow
+deactivate ServiceManager
+deactivate User
+
+!include footer.include.puml
+@enduml

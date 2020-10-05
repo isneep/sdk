@@ -1,0 +1,164 @@
+@startuml
+top to bottom direction
+scale 0.8
+
+!include formatting.include.puml
+
+
+center header
+    PAY. SDK component diagram
+end header
+
+
+frame "SDK" {
+    frame "Base" {
+        package "Application" {
+            [Application] as App
+        }
+
+        package "Config" {
+            interface ProviderInterface as ConfigProviderInterface
+            [Loader] as ConfigLoader
+        }
+
+        package "Service" {
+            [ManagerConfig] as ServiceManagerConfig
+            [Manager] as ServiceManager
+            [Loader] as ServiceLoader
+        }
+    }
+
+    frame "Modules" {
+        package "Api" <<module>> {
+            [ConfigProvider] as ApiConfig
+            [Service] as ApiService
+
+            ApiConfig -- ConfigProviderInterface
+        }
+
+        package "AuthAdapter" <<module>> {
+            [Manager] as AuthManager
+            [ConfigProvider] as AuthConfig
+
+            AuthConfig -- ConfigProviderInterface
+        }
+
+        package "Filter" <<module>> {
+            [Manager] as FilterManager
+            [ConfigProvider] as FilterConfig
+
+            FilterConfig -- ConfigProviderInterface
+        }
+
+        package "Hydrator" <<module>> {
+            [Manager] as HydratorManager
+            [ConfigProvider] as HydratorConfig
+
+            HydratorConfig -- ConfigProviderInterface
+        }
+
+        package "Mapper" <<module>> {
+            [Manager] as MapperManager
+            [ConfigProvider] as MapperConfig
+
+            MapperConfig -- ConfigProviderInterface
+        }
+
+        package "Model" <<module>> {
+            [Manager] as ModelManager
+            [ConfigProvider] as ModelConfig
+
+            ModelConfig -- ConfigProviderInterface
+        }
+
+        package "Request" <<module>> {
+            [Manager] as RequestManager
+            [ConfigProvider] as RequestConfig
+
+            RequestConfig -- ConfigProviderInterface
+        }
+
+        package "Response" <<module>> {
+            [Manager] as ResponseManager
+            [ConfigProvider] as ResponseConfig
+
+            ResponseConfig -- ConfigProviderInterface
+        }
+
+        package "Transformer" <<module>> {
+            [Manager] as TransformerManager
+            [ConfigProvider] as TransformerConfig
+
+            TransformerConfig -- ConfigProviderInterface
+        }
+
+        package "Validator" <<module>> {
+            [Manager] as ValidatorManager
+            [ConfigProvider] as ValidatorConfig
+
+            ValidatorConfig -- ConfigProviderInterface
+        }
+    }
+
+    frame "General" {
+        package "Common"
+        package "Exception" {
+            interface ExceptionInterface
+            note right of ExceptionInterface
+                General interface for exceptions
+                thrown throughout the application
+            end note
+        }
+        package "Util"
+    }
+
+    package "Resources"
+    note right of Resources : Contains functions loaded by composer
+
+    node "GuzzleHttp"
+    note bottom of GuzzleHttp
+        Scoped to
+        PayNL\SDK
+        namespace
+    end note
+}
+caption fig.1
+!include footer.include.puml
+
+
+
+App <-- ServiceManager
+ServiceManagerConfig --> ServiceManager
+ServiceLoader <-- ServiceManager : "inject\nand\nload"
+ConfigLoader --> ServiceLoader
+AuthConfig ..> AuthManager : "load\nconfig"
+FilterConfig ..> FilterManager : "load\nconfig"
+HydratorConfig ..> HydratorManager : "load\nconfig"
+MapperConfig ..> MapperManager : "load\nconfig"
+ModelConfig ..> ModelManager : "load\nconfig"
+RequestConfig ..> RequestManager : "load\nconfig"
+ResponseConfig .[#0f0f0f].> ResponseManager : "load\nconfig"
+TransformerConfig ..> TransformerManager : "load\nconfig"
+ValidatorConfig ..> ValidatorManager : "load\nconfig"
+ApiConfig ..> ServiceManager : load
+ApiService --> ServiceManager : inject
+
+ServiceManager <|-- AuthManager
+ServiceManager <|-- FilterManager
+ServiceManager <|-- HydratorManager
+ServiceManager <|-- MapperManager
+ServiceManager <|-- ModelManager
+ServiceManager <|-- RequestManager
+ServiceManager <|-- ResponseManager
+ServiceManager <|-- TransformerManager
+ServiceManager <|-- ValidatorManager
+
+General -- App
+General -- Service
+General -- Modules
+
+Resources --> Util
+
+ApiService -left-> GuzzleHttp
+
+@enduml
