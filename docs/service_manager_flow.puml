@@ -8,6 +8,8 @@
 
 @startuml(id=construct) service_manager_flow--construct
 
+scale 0.8
+
 !include formatting.include.puml
 !include service_manager_flow.puml!headerProcedure
 
