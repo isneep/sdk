@@ -362,7 +362,7 @@ class Manager implements ContainerInterface
      *
      * @return mixed
      */
-    public function doCreate(string $resolvedName, array $options = null)
+    protected function doCreate(string $resolvedName, array $options = null)
     {
         try {
             $factory = $this->getFactory($resolvedName);
@@ -446,7 +446,7 @@ class Manager implements ContainerInterface
      *
      * @return void
      */
-    public function setAlias(string $alias, $target): void
+    public function setAlias(string $alias, string $target): void
     {
         $this->configure(['aliases' => [$alias => $target]]);
     }

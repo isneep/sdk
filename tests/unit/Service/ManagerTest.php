@@ -460,7 +460,7 @@ class ManagerTest extends UnitTest
      */
     public function testItCanCreateAnInstance(): void
     {
-        $createdInstance = $this->manager->doCreate(InvokableObject::class, ['optionName' => 'optionValue']);
+        $createdInstance = $this->tester->invokeMethod($this->manager, 'doCreate', [InvokableObject::class, ['optionName' => 'optionValue']]);
         verify($createdInstance)->object();
         verify($createdInstance)->isInstanceOf(InvokableObject::class);
     }
@@ -473,7 +473,7 @@ class ManagerTest extends UnitTest
     public function testDoCreateThrowsExceptionWhenServiceCanNotBeCreated(): void
     {
         $this->expectException(ServiceNotCreatedException::class);
-        $this->manager->doCreate(DummyInitializer::class);
+        $this->tester->invokeMethod($this->manager, 'doCreate', [DummyInitializer::class]);
     }
 
     /**
