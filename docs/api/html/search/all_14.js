@@ -7,7 +7,7 @@ var searchData=
   ['services_388',['Services',['../classPayNL_1_1Sdk_1_1Model_1_1Services.html',1,'PayNL::Sdk::Model']]],
   ['set_389',['set',['../classPayNL_1_1Sdk_1_1Common_1_1AbstractTotalCollection.html#aab787bd83f84f4215dceb35f7c305eee',1,'PayNL\Sdk\Common\AbstractTotalCollection\set()'],['../classPayNL_1_1Sdk_1_1Config_1_1Config.html#aab787bd83f84f4215dceb35f7c305eee',1,'PayNL\Sdk\Config\Config\set()']]],
   ['setabbreviation_390',['setAbbreviation',['../classPayNL_1_1Sdk_1_1Model_1_1Currency.html#aac3cd2eed2a7e4d6adfbcbab5ab41a27',1,'PayNL::Sdk::Model::Currency']]],
-  ['setalias_391',['setAlias',['../classPayNL_1_1Sdk_1_1Service_1_1Manager.html#a9ae549b4308fee7985799cd59004f01f',1,'PayNL::Sdk::Service::Manager']]],
+  ['setalias_391',['setAlias',['../classPayNL_1_1Sdk_1_1Service_1_1Manager.html#a0aca7bca4ffdeb6c368a0e91f50e19ca',1,'PayNL::Sdk::Service::Manager']]],
   ['setallowoverride_392',['setAllowOverride',['../classPayNL_1_1Sdk_1_1Service_1_1Manager.html#ab21238dade09df61872144c6ee9bb2c3',1,'PayNL::Sdk::Service::Manager']]],
   ['setamount_393',['setAmount',['../classPayNL_1_1Sdk_1_1Model_1_1Amount.html#a9c83585b6cdc21d2abee6422e1275cdf',1,'PayNL\Sdk\Model\Amount\setAmount()'],['../interfacePayNL_1_1Sdk_1_1Model_1_1Member_1_1AmountAwareInterface.html#a2795bec0b720a1cd3d5168ef91c7524e',1,'PayNL\Sdk\Model\Member\AmountAwareInterface\setAmount()']]],
   ['setamountconverted_394',['setAmountConverted',['../classPayNL_1_1Sdk_1_1Model_1_1Transaction.html#aa701586456e3fed422d20a7adc116342',1,'PayNL::Sdk::Model::Transaction']]],
